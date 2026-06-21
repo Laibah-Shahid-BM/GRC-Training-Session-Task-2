@@ -58,17 +58,16 @@ INSERT INTO categories (category_name, parent_category_id) VALUES
 ('Books',       NULL),   -- 6
 ('Furniture',   NULL);   -- 7
 
--- customer 6 (James) never orders -> tests LEFT JOIN in Task 1
 INSERT INTO customers (customer_name, registration_date) VALUES
 ('Ayesha Khan',   '2025-06-01'),  -- 1
 ('Daniel Smith',  '2025-06-15'),  -- 2
 ('Mei Lin',       '2025-07-10'),  -- 3
 ('Omar Farooq',   '2025-08-05'),  -- 4
 ('Sophie Martin', '2025-09-01'),  -- 5
-('James Brown',   '2025-10-20'),  -- 6  (no orders)
+('James Brown',   '2025-10-20'),  -- 6  
 ('Fatima Ali',    '2026-01-15');  -- 7
 
--- products 2,4,8,10 are under stock 10 -> Task 17 restock cursor
+-- products 2,4,8,10 are under stock 10 
 INSERT INTO products (product_name, category_id, unit_price, stock_quantity) VALUES
 ('iPhone 15',           3, 999,  25),  -- 1
 ('Samsung Galaxy S24',  3, 899,   8),  -- 2
@@ -88,13 +87,13 @@ INSERT INTO orders (customer_id, order_date) VALUES
 (1, '2025-07-12'),  -- 2  Ayesha
 (1, '2025-09-20'),  -- 3  Ayesha
 (1, '2026-02-10'),  -- 4  Ayesha  (UNPAID)
-(2, '2025-06-20'),  -- 5  Daniel  (5 days after reg -> Task 8)
+(2, '2025-06-20'),  -- 5  Daniel  
 (2, '2025-08-15'),  -- 6  Daniel
-(3, '2025-08-01'),  -- 7  Mei     (22 days after reg -> NOT within 7)
+(3, '2025-08-01'),  -- 7  Mei     
 (4, '2025-08-10'),  -- 8  Omar    (5 days after reg -> Task 8)
 (5, '2025-11-05'),  -- 9  Sophie
 (7, '2026-01-18'),  -- 10 Fatima  (3 days after reg -> Task 8)
-(3, '2025-12-01'),  -- 11 Mei     (Pending payment)
+(3, '2025-12-01'),  -- 11 Mei      
 (5, '2026-03-15'),  -- 12 Sophie
 (2, '2026-05-10');  -- 13 Daniel
 
@@ -102,18 +101,17 @@ INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES
 (1, 1, 1, 999), (1, 7, 2, 32),     -- O1  = 1063.00
 (2, 5, 1, 1099),                       -- O2  = 1099.00
 (3, 9, 1, 189), (3, 10, 1, 349),    -- O3  =  538.99
-(4, 3, 1, 699),                        -- O4  =  699.00 (unpaid)
+(4, 3, 1, 699),                        -- O4  =  699.00
 (5, 2, 1, 899),                        -- O5  =  899.00
 (6, 8, 3, 38),                         -- O6  =  115.50
 (7, 4, 1, 1199),                       -- O7  = 1199.00
 (8, 1, 2, 999),                        -- O8  = 1998.00
 (9, 6, 1, 999), (9, 7, 1, 32),      -- O9  = 1031.00
 (10, 10, 1, 349),                      -- O10 =  349.99
-(11, 5, 1, 1099),                      -- O11 = 1099.00 (pending)
+(11, 5, 1, 1099),                      -- O11 = 1099.00 
 (12, 2, 1, 899), (12, 9, 1, 189),   -- O12 = 1088.00
 (13, 3, 2, 699);                       -- O13 = 1398.00
 
--- O4 has NO payment (unpaid). O11 is Pending. Rest Completed.
 INSERT INTO payments (order_id, payment_date, amount, status) VALUES
 (1,  '2025-06-06', 1063, 'Completed'),
 (2,  '2025-07-14', 1099, 'Completed'),
@@ -136,7 +134,8 @@ left join payments p on o.order_id = p.order_id
 group by c.customer_name;
 
 -- Task 2 
-Select c.customer_name, count(o.order_id) as total_orders, sum(case WHEN p.status = 'Unpaid' OR p.payment_id IS NULL then 1 else 0 end) as total_unpaid
+Select c.customer_name, count(o.order_id) as total_orders, sum(case WHEN p.status = 'Unpaid' OR p.payment_id IS NULL then 1 else 0 end)
+ as total_unpaid
 from customers c
 inner join orders o on c.customer_id = o.customer_id
 left join payments p on o.order_id = p.order_id 
@@ -283,11 +282,10 @@ returns decimal(10,2)
 deterministic
 
 begin
-
     -- variable to store total spending
     declare total_spent decimal(10,2);
 
-    -- calculate total completed payments of the customer
+    -- calculate total completed payments 
     select ifnull(sum(p.amount),0)
     into total_spent
     from orders o
@@ -297,7 +295,6 @@ begin
 
     -- return the calculated value
     return total_spent;
-
 end $$
 
 delimiter ;
@@ -309,11 +306,8 @@ delimiter $$
 
 create function fn_order_discount(p_order_id int)
 returns decimal(10,2)
-
 deterministic
-
 begin
-
     -- variable for total order amount
     declare order_total decimal(10,2);
 
@@ -333,22 +327,14 @@ begin
 
     -- apply discount rules
     if order_total > 10000 then
-
         set discounted_total = order_total * 0.90;
-
     elseif order_total > 5000 then
-
         set discounted_total = order_total * 0.95;
-
     else
-
         set discounted_total = order_total;
-
     end if;
-
     -- return discounted amount
     return discounted_total;
-
 end $$
 
 delimiter ;
@@ -386,8 +372,6 @@ call sp_orders_by_date_range('2025-06-01','2025-12-31');
 alter table payments
 modify status varchar(20);
 
-drop procedure if exists sp_place_order;
-
 delimiter $$
 
 create procedure sp_place_order(
@@ -408,16 +392,12 @@ begin
     declare exit handler for sqlexception
 
     begin
-
         rollback;
-
         select 'transaction rolled back because an error occurred.' as message;
-
     end;
 
     -- begin transaction
     start transaction;
-
     -- create new order
     insert into orders(customer_id, order_date)
     values(p_customer_id, curdate());
